@@ -91,6 +91,8 @@ public class FindNearestLocationsListFragment extends ListFragment {
         mAdapter = new FindNearestLocation_ListViewItem_ArrayAdapter(inflater.getContext(), new ArrayList<LocationModel>());
         setListAdapter(mAdapter);
 
+        /* Trigger Firebase log here */
+
         return view;
     }
 
