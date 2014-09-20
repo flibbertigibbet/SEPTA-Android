@@ -20,13 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-import com.firebase.simplelogin.FirebaseSimpleLoginError;
-import com.firebase.simplelogin.FirebaseSimpleLoginUser;
-import com.firebase.simplelogin.SimpleLoginAuthenticatedHandler;
 import com.google.gson.Gson;
-
-import com.firebase.client.Firebase;
-import com.firebase.simplelogin.SimpleLogin;
 
 import org.septa.android.app.R;
 import org.septa.android.app.activities.FindNearestLocationRouteDetailsActionBarActivity;
@@ -96,23 +90,6 @@ public class FindNearestLocationsListFragment extends ListFragment {
 
         mAdapter = new FindNearestLocation_ListViewItem_ArrayAdapter(inflater.getContext(), new ArrayList<LocationModel>());
         setListAdapter(mAdapter);
-
-        /* Trigger Firebase log here */
-        Firebase myRef = new Firebase("https://septauser.firebaseio.com");
-        SimpleLogin authClient = new SimpleLogin(myRef, inflater.getContext());
-        authClient.checkAuthStatus(new SimpleLoginAuthenticatedHandler() {
-            @Override
-            public void authenticated(FirebaseSimpleLoginError error, FirebaseSimpleLoginUser user) {
-                if (error != null) {
-                    // Oh no! There was an error performing the check
-                } else if (user == null) {
-                    // No user is logged in
-                } else {
-                    // There is a logged in user
-
-                }
-            }
-        });
 
         return view;
     }
