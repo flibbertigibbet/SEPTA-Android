@@ -7,6 +7,11 @@
 
 package org.septa.android.app.activities;
 
+import com.firebase.client.Firebase;
+import com.firebase.simplelogin.FirebaseSimpleLoginError;
+import com.firebase.simplelogin.FirebaseSimpleLoginUser;
+import com.firebase.simplelogin.SimpleLogin;
+import com.firebase.simplelogin.SimpleLoginAuthenticatedHandler;
 import com.google.android.gms.common.GooglePlayServicesClient;
 
 import android.content.DialogInterface;
@@ -37,8 +42,14 @@ import org.septa.android.app.managers.SharedPreferencesManager;
 import org.septa.android.app.models.LocationModel;
 import org.septa.android.app.services.apiproxies.LocationServiceProxy;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -53,6 +64,8 @@ public class FindNearestLocationActionBarActivity extends BaseAnalyticsActionBar
 
     //State Keys
     public static final String STATE_CURRENT_LOCATION = "currentLocation";
+
+    public static final String FIREBASE_URL = "https://septauser.firebaseio.com/";
 
     public static final int UPDATE_INTERVAL_IN_SECONDS = 120;
     private static final int MILLISECONDS_PER_SECOND = 1000;
@@ -245,6 +258,49 @@ public class FindNearestLocationActionBarActivity extends BaseAnalyticsActionBar
         loadMapAndListView(location, SharedPreferencesManager.getInstance().getNearestLocationMapSearchRadius());
     }
 
+    private void fireTrack(Location location){
+        /* Trigger Firebase log here */
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
+        Firebase myRef = new Firebase(FIREBASE_URL);
+        SimpleLogin authClient = new SimpleLogin(myRef, getApplicationContext());
+        authClient.checkAuthStatus(new SimpleLoginAuthenticatedHandler() {
+            @Override
+            public void authenticated(FirebaseSimpleLoginError error, FirebaseSimpleLoginUser user) {
+                if (error != null) {
+                    // Oh no! There was an error performing the check
+                } else if (user == null) {
+                    // No user is logged in
+                } else {
+                    // There is a logged in user
+                    Log.i(TAG, "User Track");
+                    String userid = user.getUserId();
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd", Locale.US);
+                    System.out.println("User "+userid);
+                    Firebase locRef = new Firebase(FIREBASE_URL+userid+"/tracks/"+
+                            sdf.format(new Date(System.currentTimeMillis())));
+                    Calendar calendar = Calendar.getInstance();
+                    java.util.Date now = calendar.getTime();
+                    java.sql.Timestamp currentTimestamp = new java.sql.Timestamp(currentLocation.getTime());
+
+                    Long timestmp = currentLocation.getTime();
+                    String str = ""+ timestmp;
+                    locRef.child(str+"/uid").setValue(userid);
+                    locRef.child(str+"/setAt").setValue(currentTimestamp);
+                    locRef.child(str+"/latitude").setValue(currentLocation.getLatitude());
+                    locRef.child(str+"/longitude").setValue(currentLocation.getLongitude());
+                    locRef.child(str+"/speed").setValue(currentLocation.getSpeed());
+                    if(currentLocation.hasAccuracy()) {
+                        locRef.child(str+"/accuracy").setValue(currentLocation.getAccuracy());
+                    }
+                    if(currentLocation.hasAltitude()) {
+                        locRef.child(str+"/altitude").setValue(currentLocation.getAltitude());
+                    }
+
+                }
+            }
+        });
+    }
+
     private void moveMap(Location location, boolean animate){
         CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), defaultZoom);
         if(animate){
@@ -275,6 +331,7 @@ public class FindNearestLocationActionBarActivity extends BaseAnalyticsActionBar
          */
         if(lastListedLocation == null || lastListedLocation.distanceTo(currentLocation) > maxDistancePerStep ){
             moveMapAndLoadList(currentLocation, true);
+            fireTrack(currentLocation);
         } else {
             moveMap(currentLocation, true);
         }
